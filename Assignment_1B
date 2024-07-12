@@ -1,98 +1,159 @@
-# Code for assignment_1b OSL
+OSL- ASSIGNMENT 1B
 
 #!/bin/bash
+
 DB_FILE="music_database.csv"
 
 # Function to initialize the database
 initialize_db() {
-	if [ ! -f $DB_FILE ]; then
-	echo "ID,Title,Artist,Album,Year" > $DB_FILE
-	fi
-	}
-# Function to display all records
-	display_records() {
-		echo "ID,Title,Artist,Album,Year"
-		cat $DB_FILE | tail -n +2
-		}
-# Function to add a record
-	add_record() {
-		read -p "Enter ID: " id
-		read -p "Enter Title: " title
-		read -p "Enter Artist: " artist
-		read -p "Enter Album: " album
-		read -p "Enter Year: " year
-		echo "$id,$title,$artist,$album,$year" >> $DB_FILE
-		echo "Record added successfully."
-		}
-# Function to delete a record
-	delete_record() {
-		read -p "Enter the ID of the record to delete: " id
-		sed -i "/^$id,/d" $DB_FILE
-		echo "Record deleted successfully."
-		}
-# Function to update a record
-	update_record() {
-		read -p "Enter the ID of the record to update: " id
-		sed -i "/^$id,/d" $DB_FILE
-		read -p "Enter new Title: " title
-		read -p "Enter new Artist: " artist
-		read -p "Enter new Album: " album
-		read -p "Enter new Year: " year
-		echo "$id,$title,$artist,$album,$year" >> $DB_FILE
+    if [ ! -f $DB_FILE ]; then
+        echo "ID,Title,Artist,Album,Year" > $DB_FILE
+    fi
+}
 
-		echo "Record updated successfully."
-		}
+# Function to display all records
+display_records() {
+    echo "ID,Title,Artist,Album,Year"
+    cat $DB_FILE | tail -n +2
+}
+
+# Function to validate ID
+validate_id() {
+    if ! [[ $1 =~ ^[0-9]+$ ]]; then
+        echo "Invalid ID. ID should be numeric."
+        return 1
+    fi
+    return 0
+}
+
+# Function to validate Year
+validate_year() {
+    if ! [[ $1 =~ ^[0-9]+$ ]] || [ $1 -le 2000 ]; then
+        echo "Invalid Year. Year should be numeric and greater than 2000."
+        return 1
+    fi
+    return 0
+}
+
+# Function to add a record
+add_record() {
+    while true; do
+        read -p "Enter ID: " id
+        validate_id $id && break
+    done
+    
+    read -p "Enter Title: " title
+    read -p "Enter Artist: " artist
+    read -p "Enter Album: " album
+    
+    while true; do
+        read -p "Enter Year: " year
+        validate_year $year && break
+    done
+
+    echo "$id,$title,$artist,$album,$year" >> $DB_FILE
+    echo "Record added successfully."
+}
+
+# Function to delete a record
+delete_record() {
+    read -p "Enter the ID of the record to delete: " id
+    sed -i "/^$id,/d" $DB_FILE
+    echo "Record deleted successfully."
+}
+
+# Function to update a record
+update_record() {
+    read -p "Enter the ID of the record to update: " id
+    sed -i "/^$id,/d" $DB_FILE
+
+    read -p "Enter new Title: " title
+    read -p "Enter new Artist: " artist
+    read -p "Enter new Album: " album
+    
+    while true; do
+        read -p "Enter new Year: " year
+        validate_year $year && break
+    done
+    
+    echo "$id,$title,$artist,$album,$year" >> $DB_FILE
+    echo "Record updated successfully."
+}
+
 # Function to sort records
-	sort_records() {
-		read -p "Enter the field to sort by (ID, Title, Artist, Album, Year): " field
-		field=$(echo $field | tr '[:upper:]' '[:lower:]')
-		case $field in
-		id) field_num=1 ;;
-		title) field_num=2 ;;
-		artist) field_num=3 ;;
-		album) field_num=4 ;;
-		year) field_num=5 ;;
-		*) echo "Invalid field."; return ;;
-		esac
-		echo "ID,Title,Artist,Album,Year"
-		(head -n 1 $DB_FILE && tail -n +2 $DB_FILE | sort -t','
-		-k$field_num,$field_num) > sorted_db.csv
-		cat sorted_db.csv
-		mv sorted_db.csv $DB_FILE
-		}
+sort_records() {
+    read -p "Enter the field to sort by (ID, Title, Artist, Album, Year): " field
+    field=$(echo $field | tr '[:upper:]' '[:lower:]')
+    case $field in
+        id) field_num=1 ;;
+        title) field_num=2 ;;
+        artist) field_num=3 ;;
+        album) field_num=4 ;;
+        year) field_num=5 ;;
+        *) echo "Invalid field."; return ;;
+    esac
+    echo "ID,Title,Artist,Album,Year"
+    (head -n 1 $DB_FILE && tail -n +2 $DB_FILE | sort -t',' -k$field_num,$field_num) > sorted_db.csv
+    cat sorted_db.csv
+    mv sorted_db.csv $DB_FILE
+}
+
+# Function to search for records
+search_record() {
+    read -p "Enter the field to search by (ID, Title, Artist, Album, Year): " field
+    field=$(echo $field | tr '[:upper:]' '[:lower:]')
+    case $field in
+        id) field_num=1 ;;
+        title) field_num=2 ;;
+        artist) field_num=3 ;;
+        album) field_num=4 ;;
+        year) field_num=5 ;;
+        *) echo "Invalid field."; return ;;
+    esac
+
+    read -p "Enter the value to search for: " value
+    echo "ID,Title,Artist,Album,Year"
+    awk -F',' -v col=$field_num -v val="$value" 'NR==1 || $col == val' $DB_FILE
+}
+
 # Function to add initial records
-	add_initial_records() {
-		echo "1,Tere Naina,Shankar Mahadevan & Shreya Ghosal, Chandni Chowk To China,2009" >> $DB_FILE
+add_initial_records() {
+    echo "1,Tere Naina,Shankar Mahadevan & Shreya Ghosal, Chandni Chowk To China,2009" >> $DB_FILE
 		echo "2,Mitwa,Shankar-Ehsaan-Loy,Kabhi Alvida Naa Kehna,2006" >> $DB_FILE
 		echo "3,Chand Sifarish, Jatin-Lalit,Fanna,2006" >> $DB_FILE
 		echo "4,Qaafirana,Arjit Singh,Kedarnath,2018" >> $DB_FILE
 		echo "5,Kaun Tujhe, Palak Muchhal,M.S.Dhoni-The Untold Story,2016" >> $DB_FILE
 		}
+
 # Initialize the database
 initialize_db
-# Add initial records if the database is empty
-	if [ $(wc -l < $DB_FILE) -eq 1 ]; then
-	add_initial_records
-	fi
-# Menu for user options
-	while true; do
-	echo
-	echo "Music Database"
-	echo "1. Display records"
-	echo "2. Add a record"
-	echo "3. Delete a record"
-	echo "4. Update a record"
 
-	echo "5. Sort records"
-	echo "6. Exit"
-	read -p "Choose an option: " choice
-	case $choice in
-	1) display_records ;;
-	2) add_record ;;
-	3) delete_record ;;
-	4) update_record ;;
-	5) sort_records ;;
-	6) exit 0 ;;
-	*) echo "Invalid option. Please try again." ;;
-	esac
+# Add initial records if the database is empty
+if [ $(wc -l < $DB_FILE) -eq 1 ]; then
+    add_initial_records
+fi
+
+# Menu for user options
+while true; do
+    echo
+    echo "Music Database"
+    echo "1. Display records"
+    echo "2. Add a record"
+    echo "3. Delete a record"
+    echo "4. Update a record"
+    echo "5. Sort records"
+    echo "6. Search records"
+    echo "7. Exit"
+    read -p "Choose an option: " choice
+
+    case $choice in
+        1) display_records ;;
+        2) add_record ;;
+        3) delete_record ;;
+        4) update_record ;;
+        5) sort_records ;;
+        6) search_record ;;
+        7) exit 0 ;;
+        *) echo "Invalid option. Please try again." ;;
+    esac
 done
